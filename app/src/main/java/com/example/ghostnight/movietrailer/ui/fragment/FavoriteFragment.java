@@ -1,131 +1,94 @@
 package com.example.ghostnight.movietrailer.ui.fragment;
 
-import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.support.v7.widget.GridLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ProgressBar;
-import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.databinding.DataBindingUtil;
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProviders;
+import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.example.ghostnight.movietrailer.R;
+import com.example.ghostnight.movietrailer.databinding.FragmentFavoriteBinding;
 import com.example.ghostnight.movietrailer.model.Movie;
-import com.example.ghostnight.movietrailer.model.MovieHelper;
-import com.example.ghostnight.movietrailer.ui.adapter.FavoriteMoviesAdapter;
+import com.example.ghostnight.movietrailer.ui.activity.MovieDetailsActivity;
+import com.example.ghostnight.movietrailer.ui.adapter.MovieListAdapter;
+import com.example.ghostnight.movietrailer.ui.viewmodel.FavoriteViewModel;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import io.realm.Realm;
 
-public class FavoriteFragment extends Fragment implements FavoriteMoviesAdapter.ListItemClickListener {
+public class FavoriteFragment extends Fragment {
+    private ArrayList<Movie> movies = new ArrayList<>();
+    private FavoriteViewModel favoriteViewModel;
+    private MovieListAdapter adapter;
+    private FragmentFavoriteBinding binding;
 
-    private OnFragmentInteractionListener mListener;
-    private RecyclerView list;
-    private FavoriteMoviesAdapter adapter;
-    private List<Movie> mMovies;
-    private MovieHelper mHelper;
-    private Realm mRealm;
-    private TextView noItem;
-    private ProgressBar loader;
-
-    public FavoriteFragment() {
-        // Required empty public constructor
-    }
-
-    public static FavoriteFragment newInstance() {
-        FavoriteFragment fragment = new FavoriteFragment();
-        return fragment;
-    }
-
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_favorite, container, false);
-        mRealm = Realm.getDefaultInstance();
-        mHelper = MovieHelper.getInstance(getContext());
-        noItem = view.findViewById(R.id.noItems);
-        loader = view.findViewById(R.id.progress);
-        GridLayoutManager gridLayoutManager = new GridLayoutManager(getContext(), 1);
-        list = view.findViewById(R.id.list);
-        list.setLayoutManager(gridLayoutManager);
-        list.setHasFixedSize(true);
-        showLoader();
-        mMovies = mHelper.getAllMovies(mRealm);
-        populateList();
+        binding = DataBindingUtil.bind(view);
         return view;
     }
 
     @Override
-    public void onResume() {
-        super.onResume();
-        showLoader();
-        mMovies = mHelper.getAllMovies(mRealm);
-        populateList();
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        favoriteViewModel = ViewModelProviders.of(this).get(FavoriteViewModel.class);
+
+        favoriteViewModel.getMovies().observe(this, new Observer<List<Movie>>() {
+            @Override
+            public void onChanged(List<Movie> moviess) {
+                if (moviess != null && moviess.size() > 0) {
+                    binding.noItems.setVisibility(View.GONE);
+                    binding.list.setVisibility(View.VISIBLE);
+                    movies.clear();
+                    movies.addAll(moviess);
+                    adapter.notifyDataSetChanged();
+                } else {
+                    binding.list.setVisibility(View.GONE);
+                    binding.noItems.setText(R.string.no_favorite_movies);
+                    binding.noItems.setVisibility(View.VISIBLE);
+                }
+            }
+        });
+
+
+        initMoviesList();
     }
 
-    @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-        if (context instanceof OnFragmentInteractionListener) {
-            mListener = (OnFragmentInteractionListener) context;
-        } else {
-            throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
-        }
-    }
+    private void initMoviesList() {
+        binding.list.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.VERTICAL, false));
+        binding.list.setHasFixedSize(true);
 
-    @Override
-    public void onDetach() {
-        super.onDetach();
-        mListener = null;
-    }
+        adapter = new MovieListAdapter(movies, new MovieListAdapter.ListItemClickListener() {
+            @Override
+            public void onListItemClick(Movie movie) {
+                Intent intent = new Intent(getActivity(), MovieDetailsActivity.class);
+                intent.putExtra("movie", movie);
+                startActivity(intent);
+            }
 
-    @Override
-    public void onListItemClick(Movie movie) {
-        mListener.onListItemSelected(movie);
-    }
+            @Override
+            public void onLoadMoreClick() {
+            }
 
-    @Override
-    public void onRemoveFromFavoriteClick(Movie movie) {
-        showLoader();
-        mHelper.removeFromFavorite(movie.getId(), mRealm);
-        mMovies = mHelper.getAllMovies(mRealm);
-        populateList();
-        hideLoader();
-    }
+            @Override
+            public void onAddToFavoriteClick(Movie movie) {
+                favoriteViewModel.addMovieToFavorite(movie);
+            }
 
-    public interface OnFragmentInteractionListener {
-        void onListItemSelected(Movie movie);
-    }
+            @Override
+            public void onRemoveFromFavoriteClick(Movie movie) {
+                favoriteViewModel.removeMovieFromFavorite(movie);
+            }
+        }, getContext(), favoriteViewModel);
 
-    public void populateList() {
-        if (mMovies.size() > 0) {
-            adapter = new FavoriteMoviesAdapter(mMovies, this, getContext());
-            list.setAdapter(adapter);
-            list.setVisibility(View.VISIBLE);
-            noItem.setVisibility(View.GONE);
-        } else {
-            list.setVisibility(View.GONE);
-            noItem.setVisibility(View.VISIBLE);
-        }
-        hideLoader();
-    }
-
-    void showLoader() {
-        loader.setVisibility(View.VISIBLE);
-        list.setVisibility(View.INVISIBLE);
-    }
-
-    void hideLoader() {
-        loader.setVisibility(View.GONE);
-        list.setVisibility(View.VISIBLE);
+        binding.list.setAdapter(adapter);
     }
 }

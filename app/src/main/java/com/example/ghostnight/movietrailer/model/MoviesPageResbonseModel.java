@@ -1,44 +1,46 @@
-package com.example.ghostnight.movietrailer.retrofit.retrofit_models;
+package com.example.ghostnight.movietrailer.model;
 
+
+import com.example.ghostnight.movietrailer.model.Movie;
 
 import java.util.ArrayList;
 
 public class MoviesPageResbonseModel {
-    int page;
-    ArrayList<MoviesResbonseModel> results;
-    int total_results;
-    int total_page;
+    Integer page;
+    ArrayList<Movie> results;
+    Integer total_results;
+    Integer total_page;
     String status_message;
 
-    public int getPage() {
+    public Integer getPage() {
         return page;
     }
 
-    public void setPage(int page) {
+    public void setPage(Integer page) {
         this.page = page;
     }
 
-    public ArrayList<MoviesResbonseModel> getResults() {
+    public ArrayList<Movie> getResults() {
         return results;
     }
 
-    public void setResults(ArrayList<MoviesResbonseModel> results) {
+    public void setResults(ArrayList<Movie> results) {
         this.results = results;
     }
 
-    public int getTotal_results() {
+    public Integer getTotal_results() {
         return total_results;
     }
 
-    public void setTotal_results(int total_results) {
+    public void setTotal_results(Integer total_results) {
         this.total_results = total_results;
     }
 
-    public int getTotal_page() {
+    public Integer getTotal_page() {
         return total_page;
     }
 
-    public void setTotal_page(int total_page) {
+    public void setTotal_page(Integer total_page) {
         this.total_page = total_page;
     }
 

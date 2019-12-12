@@ -1,19 +1,36 @@
 package com.example.ghostnight.movietrailer.model;
 
-import io.realm.RealmObject;
-import io.realm.annotations.PrimaryKey;
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
 
-public class Movie extends RealmObject {
-    @PrimaryKey
+import com.google.gson.annotations.SerializedName;
+
+import java.io.Serializable;
+
+@Entity(tableName = "movies_table")
+public class Movie implements Serializable {
+    @PrimaryKey(autoGenerate = true)
     private int id;
 
     private String title;
+    @SerializedName("poster_path")
     private String image;
-    private float rating;
+    @SerializedName("vote_average")
+    private Float rating;
+    @SerializedName("key")
     private String videoPath;
+    @SerializedName("overview")
     private String overview;
+    @SerializedName("release_date")
     private String release_date;
-    private boolean favorite;
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
 
     public String getTitle() {
         return title;
@@ -31,12 +48,20 @@ public class Movie extends RealmObject {
         this.image = image;
     }
 
-    public float getRating() {
+    public Float getRating() {
         return rating;
     }
 
-    public void setRating(float rating) {
+    public void setRating(Float rating) {
         this.rating = rating;
+    }
+
+    public String getVideoPath() {
+        return videoPath;
+    }
+
+    public void setVideoPath(String videoPath) {
+        this.videoPath = videoPath;
     }
 
     public String getOverview() {
@@ -55,27 +80,4 @@ public class Movie extends RealmObject {
         this.release_date = release_date;
     }
 
-    public boolean isFavorite() {
-        return favorite;
-    }
-
-    public void setFavorite(boolean favorite) {
-        this.favorite = favorite;
-    }
-
-    public String getVideoPath() {
-        return videoPath;
-    }
-
-    public void setVideoPath(String videoPath) {
-        this.videoPath = videoPath;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
 }

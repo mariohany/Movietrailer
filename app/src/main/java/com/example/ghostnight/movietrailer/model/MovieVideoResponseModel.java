@@ -1,10 +1,10 @@
-package com.example.ghostnight.movietrailer.retrofit.retrofit_models;
+package com.example.ghostnight.movietrailer.model;
 
 import java.util.ArrayList;
 
 public class MovieVideoResponseModel {
     int id;
-    ArrayList<MovieResultResponseModel> results;
+    ArrayList<Video> results;
 
     public int getId() {
         return id;
@@ -14,11 +14,13 @@ public class MovieVideoResponseModel {
         this.id = id;
     }
 
-    public ArrayList<MovieResultResponseModel> getResults() {
+    public ArrayList<Video> getResults() {
         return results;
     }
 
-    public void setResults(ArrayList<MovieResultResponseModel> results) {
+    public void setResults(ArrayList<Video> results) {
         this.results = results;
     }
 }
+
+

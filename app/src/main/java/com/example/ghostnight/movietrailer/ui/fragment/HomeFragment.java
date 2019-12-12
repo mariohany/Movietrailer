@@ -1,226 +1,118 @@
 package com.example.ghostnight.movietrailer.ui.fragment;
 
-import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
-import android.support.v4.app.Fragment;
-import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.widget.GridLayoutManager;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ProgressBar;
-import android.widget.TextView;
-import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.databinding.DataBindingUtil;
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProviders;
+import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.example.ghostnight.movietrailer.R;
-import com.example.ghostnight.movietrailer.model.MovieHelper;
-import com.example.ghostnight.movietrailer.model.MovieHolder;
-import com.example.ghostnight.movietrailer.retrofit.NetworkService;
-import com.example.ghostnight.movietrailer.retrofit.retrofit_models.MoviesPageResbonseModel;
-import com.example.ghostnight.movietrailer.retrofit.retrofit_response.MoviesResbonse;
-import com.example.ghostnight.movietrailer.ui.adapter.APIMovieListAdapter;
+import com.example.ghostnight.movietrailer.databinding.FragmentHomeBinding;
+import com.example.ghostnight.movietrailer.model.Movie;
+import com.example.ghostnight.movietrailer.ui.activity.MovieDetailsActivity;
+import com.example.ghostnight.movietrailer.ui.adapter.MovieListAdapter;
+import com.example.ghostnight.movietrailer.ui.viewmodel.HomeViewModel;
 import com.example.ghostnight.movietrailer.utills.NetworkUtils;
 
 import java.util.ArrayList;
 
-import io.realm.Realm;
 
-public class HomeFragment extends Fragment implements APIMovieListAdapter.ListItemClickListener, MoviesResbonse.MoviesResbonseListener {
+public class HomeFragment extends Fragment {
 
-    private OnFragmentInteractionListener mListener;
-    private RecyclerView list;
-    private APIMovieListAdapter adapter;
-    private ArrayList<MovieHolder> mMovies;
-    private SwipeRefreshLayout refreshLayout;
-    private LinearLayoutManager linearLayoutManager;
-    private int pageNumber;
-    private Realm mRealm;
-    private MovieHelper mHelper;
-    private TextView noItem;
-    private ProgressBar loader;
+    private ArrayList<Movie> movies = new ArrayList<>();
+    private HomeViewModel homeViewModel;
+    private MovieListAdapter adapter;
+    private FragmentHomeBinding binding;
 
-    public HomeFragment() {
-        // Required empty public constructor
-    }
-
-    public static HomeFragment newInstance() {
-        HomeFragment fragment = new HomeFragment();
-        return fragment;
+    public View onCreateView(@NonNull LayoutInflater inflater,
+                             ViewGroup container, Bundle savedInstanceState) {
+        View root = inflater.inflate(R.layout.fragment_home, container, false);
+        binding = DataBindingUtil.bind(root);
+        return root;
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-    }
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        homeViewModel = ViewModelProviders.of(this).get(HomeViewModel.class);
 
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_home, container, false);
-        mRealm = Realm.getDefaultInstance();
-        mHelper = MovieHelper.getInstance(getContext());
-        mMovies = new ArrayList<MovieHolder>();
-        loader = view.findViewById(R.id.progress);
-        noItem = view.findViewById(R.id.noItems);
-        pageNumber = 1;
-        linearLayoutManager = new GridLayoutManager(getContext(), 1);
-        list = view.findViewById(R.id.list);
-        list.setLayoutManager(linearLayoutManager);
-        list.setHasFixedSize(true);
-        refreshLayout = view.findViewById(R.id.swiperefresh);
-        refreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+        initMoviesList();
+
+        homeViewModel.getMovies().observe(this, new Observer<ArrayList<Movie>>() {
             @Override
-            public void onRefresh() {
-                callApi(pageNumber);
+            public void onChanged(ArrayList<Movie> moviess) {
+                if (NetworkUtils.isNetworkConnected(getContext())) {
+                    if (moviess != null && moviess.size() > 0) {
+                        binding.noItems.setVisibility(View.GONE);
+                        binding.list.setVisibility(View.VISIBLE);
+                        movies.clear();
+                        movies.addAll(moviess);
+                        adapter.notifyDataSetChanged();
+                    } else {
+                        binding.list.setVisibility(View.GONE);
+                        binding.noItems.setText(R.string.no_movies);
+                        binding.noItems.setVisibility(View.VISIBLE);
+                    }
+                } else {
+                    binding.list.setVisibility(View.GONE);
+                    binding.noItems.setText(R.string.no_internet);
+                    binding.noItems.setVisibility(View.VISIBLE);
+                }
             }
         });
 
-        callApi(pageNumber);
-
-        return view;
-    }
-
-    @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-        if (context instanceof OnFragmentInteractionListener) {
-            mListener = (OnFragmentInteractionListener) context;
-        } else {
-            throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
-        }
-    }
-
-    @Override
-    public void onDetach() {
-        super.onDetach();
-        mListener = null;
-    }
-
-    @Override
-    public void onListItemClick(MovieHolder movie) {
-        mListener.onListItemSelected(movie);
-    }
-
-    @Override
-    public void onLoadMoreClick() {
-        mMovies.add(null);
-        adapter.notifyItemInserted(mMovies.size()-1);
-
-        new Handler().postDelayed(new Runnable() {
+        homeViewModel.getShowLoading().observe(this, new Observer<Boolean>() {
             @Override
-            public void run() {
-                mMovies.remove(mMovies.size()-1);
-                adapter.notifyItemRemoved(mMovies.size());
-                pageNumber++;
-                callApi(pageNumber);
-            }
-        }, 1500);
-    }
-
-    @Override
-    public void onAddToFavoriteClick(MovieHolder movie) {
-        mListener.onAddToFavorite(movie);
-        movie.setFavorite(true);
-    }
-
-    @Override
-    public void onRemoveFromFavoriteClick(MovieHolder movie) {
-        mListener.onRemoveFromFavorite(movie);
-        movie.setFavorite(false);
-    }
-
-    @Override
-    public void onGetMoviesSuccessfuly(MoviesPageResbonseModel body) {
-        if (pageNumber==1) {
-            for (int i = 0; i < body.getResults().size(); i++) {
-                mMovies.add(new MovieHolder(body.getResults().get(i).getId(),
-                        body.getResults().get(i).getTitle(),
-                        body.getResults().get(i).getPoster_path(),
-                        body.getResults().get(i).getVote_average(),
-                        null,
-                        body.getResults().get(i).getOverview(),
-                        body.getResults().get(i).getRelease_date(),
-                        false));
-                if (mHelper.isMovieInFavorite(body.getResults().get(i).getId(), mRealm)) {
-                    mMovies.get(i).setFavorite(true);
+            public void onChanged(Boolean aBoolean) {
+                if (aBoolean) {
+                    binding.progress.setVisibility(View.VISIBLE);
+                    binding.list.setVisibility(View.GONE);
+                    binding.noItems.setVisibility(View.GONE);
+                } else {
+                    binding.progress.setVisibility(View.GONE);
+                    binding.swiperefresh.setRefreshing(false);
                 }
             }
-            populateList();
-        }else{
-            for (int i = 0; i < body.getResults().size(); i++) {
-                mMovies.add(new MovieHolder(body.getResults().get(i).getId(),
-                        body.getResults().get(i).getTitle(),
-                        body.getResults().get(i).getPoster_path(),
-                        body.getResults().get(i).getVote_average(),
-                        null,
-                        body.getResults().get(i).getOverview(),
-                        body.getResults().get(i).getRelease_date(),
-                        false));
-                if (mHelper.isMovieInFavorite(body.getResults().get(i).getId(), mRealm)) {
-                    mMovies.get(i).setFavorite(true);
-                }
-                adapter.notifyItemInserted(mMovies.size());
+        });
+
+        binding.swiperefresh.setOnRefreshListener(homeViewModel.refreshListener);
+    }
+
+    private void initMoviesList() {
+        binding.list.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.VERTICAL, false));
+        binding.list.setHasFixedSize(true);
+
+        adapter = new MovieListAdapter(movies, new MovieListAdapter.ListItemClickListener() {
+            @Override
+            public void onListItemClick(Movie movie) {
+                Intent intent = new Intent(getActivity(), MovieDetailsActivity.class);
+                intent.putExtra("movie", movie);
+                startActivity(intent);
             }
-            adapter.setLoaded();
-            list.setVisibility(View.VISIBLE);
-            noItem.setVisibility(View.GONE);
-            refreshLayout.setRefreshing(false);
-            hideLoader();
-        }
-    }
 
-    @Override
-    public void onGetMoviesFailed(String status_message) {
-        Toast.makeText(getContext(), status_message, Toast.LENGTH_LONG).show();
-        populateList();
-    }
+            @Override
+            public void onLoadMoreClick() {
+                homeViewModel.loadMoreMovies();
+            }
 
-    public void callApi(int page) {
-        showLoader();
-        if (NetworkUtils.isNetworkConnected(getContext())) {
-            NetworkService.getInstance().getMovies(page, HomeFragment.this);
-        } else {
-            Toast.makeText(getContext(), "No Internet connection!", Toast.LENGTH_SHORT).show();
-            populateList();
-        }
-    }
+            @Override
+            public void onAddToFavoriteClick(Movie movie) {
+                homeViewModel.addMovieToFavorite(movie);
+            }
 
-    public interface OnFragmentInteractionListener {
-        void onListItemSelected(MovieHolder movie);
-        void onAddToFavorite(MovieHolder movie);
-        void onRemoveFromFavorite(MovieHolder movie);
-    }
+            @Override
+            public void onRemoveFromFavoriteClick(Movie movie) {
+                homeViewModel.removeMovieFromFavorite(movie);
+            }
+        }, getContext(), homeViewModel);
 
-    public void populateList() {
-        if (mMovies.size() > 0) {
-            adapter = new APIMovieListAdapter(mMovies, this, getContext(), list);
-            list.setAdapter(adapter);
-            list.setVisibility(View.VISIBLE);
-            noItem.setVisibility(View.GONE);
-        } else if (mMovies.size() == 0 && !NetworkUtils.isNetworkConnected(getContext())) {
-            list.setVisibility(View.GONE);
-            noItem.setText(getString(R.string.no_internet));
-            noItem.setVisibility(View.VISIBLE);
-        } else {
-            list.setVisibility(View.GONE);
-            noItem.setText(getString(R.string.no_movies));
-            noItem.setVisibility(View.VISIBLE);
-        }
-        refreshLayout.setRefreshing(false);
-        hideLoader();
-    }
-
-    void showLoader() {
-        loader.setVisibility(View.VISIBLE);
-        list.setVisibility(View.INVISIBLE);
-    }
-
-    void hideLoader() {
-        loader.setVisibility(View.GONE);
-        list.setVisibility(View.VISIBLE);
+        binding.list.setAdapter(adapter);
     }
 }
