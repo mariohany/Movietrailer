@@ -1,9 +1,9 @@
 package com.example.ghostnight.movietrailer.retrofit;
 
-import com.example.ghostnight.movietrailer.retrofit.retrofit_models.MovieVideoResponseModel;
-import com.example.ghostnight.movietrailer.retrofit.retrofit_models.MoviesPageResbonseModel;
-import com.example.ghostnight.movietrailer.retrofit.retrofit_models.SearchMoviesPageResbonseModel;
+import com.example.ghostnight.movietrailer.model.MovieVideoResponseModel;
+import com.example.ghostnight.movietrailer.model.MoviesPageResbonseModel;
 
+import io.reactivex.Single;
 import retrofit2.Call;
 import retrofit2.http.GET;
 import retrofit2.http.Path;
@@ -25,7 +25,7 @@ public interface APIInterface {
             @Query("language") String language);
 
     @GET("search/movie")
-    Call<SearchMoviesPageResbonseModel> searchMovie(
+    Single<MoviesPageResbonseModel> searchMovie(
             @Query("api_key") String key,
             @Query("language") String language,
             @Query("query") String query,
