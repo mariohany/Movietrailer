@@ -21,9 +21,9 @@
 
             <ImageView
                 android:id="@+id/image"
-                android:src="@drawable/poster_holder"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:src="@drawable/poster_holder"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
@@ -41,31 +41,23 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/image" />
 
-            <LinearLayout
+
+            <TextView
+                android:id="@+id/rating"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
+                android:layout_gravity="center_vertical"
+                android:layout_marginStart="8dp"
                 android:layout_marginBottom="8dp"
+                android:drawableStart="@drawable/ic_star"
+                android:drawablePadding="2dp"
+                android:gravity="center"
+                android:text="@string/rating_holder"
+                android:textColor="@color/light_gray"
+                android:textSize="16sp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/title">
-
-                <ImageView
-                    android:id="@+id/imageView"
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:src="@drawable/ic_star" />
-
-                <TextView
-                    android:id="@+id/rating"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
-                    android:layout_marginStart="2dp"
-                    android:text="@string/rating_holder"
-                    android:textColor="#90A4AE"
-                    android:textSize="16sp" />
-            </LinearLayout>
+                app:layout_constraintTop_toBottomOf="@+id/title" />
 
             <ImageView
                 android:id="@+id/favorite_btn"
