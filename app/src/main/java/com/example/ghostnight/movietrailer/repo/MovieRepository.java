@@ -3,6 +3,7 @@ package com.example.ghostnight.movietrailer.repo;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.AsyncTask;
+import android.util.Log;
 import android.widget.Toast;
 
 import androidx.lifecycle.LiveData;
@@ -11,7 +12,6 @@ import androidx.lifecycle.MutableLiveData;
 import com.example.ghostnight.movietrailer.model.Movie;
 import com.example.ghostnight.movietrailer.model.MovieVideoResponseModel;
 import com.example.ghostnight.movietrailer.model.MoviesPageResbonseModel;
-import com.example.ghostnight.movietrailer.retrofit.BaseResponseListener;
 import com.example.ghostnight.movietrailer.retrofit.NetworkService;
 import com.example.ghostnight.movietrailer.room.MovieDao;
 import com.example.ghostnight.movietrailer.room.MovieDatabase;
@@ -21,9 +21,14 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import io.reactivex.Single;
+import io.reactivex.SingleObserver;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 
 public class MovieRepository {
 
+    private static final String TAG = MovieRepository.class.getName();
     private static MovieRepository INSTANCE;
     private final Context context;
     private MovieDatabase movieDatabase;
@@ -69,20 +74,28 @@ public class MovieRepository {
     public MutableLiveData<Movie> getVideo(final Movie movie) {
         final MutableLiveData<Movie> movieLiveData = new MutableLiveData<>();
         if (NetworkUtils.isNetworkConnected(context)) {
-            NetworkService.getInstance().getMovieVideo(movie.getId(), new BaseResponseListener<MovieVideoResponseModel>() {
-                @Override
-                public void onSuccess(MovieVideoResponseModel response) {
-                    if (response.getResults().size() > 0) {
-                        movie.setVideoPath(response.getResults().get(0).getKey());
-                        movieLiveData.setValue(movie);
-                    }
-                }
+            NetworkService.getInstance().getMovieVideo(movie.getId())
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(new SingleObserver<MovieVideoResponseModel>() {
+                        @Override
+                        public void onSubscribe(Disposable d) {
+                            Log.d(TAG, "onSubscribe: " + Thread.currentThread().getName());
+                        }
 
-                @Override
-                public void onFailure(String msg) {
-                    Toast.makeText(context, msg, Toast.LENGTH_LONG).show();
-                }
-            });
+                        @Override
+                        public void onSuccess(MovieVideoResponseModel responseModel) {
+                            if (responseModel.getResults().size() > 0) {
+                                movie.setVideoPath(responseModel.getResults().get(0).getKey());
+                                movieLiveData.setValue(movie);
+                            }
+                        }
+
+                        @Override
+                        public void onError(Throwable e) {
+                            Toast.makeText(context, e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
+                        }
+                    });
         }
         return movieLiveData;
     }

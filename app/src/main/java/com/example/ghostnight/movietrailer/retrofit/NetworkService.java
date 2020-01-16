@@ -4,7 +4,6 @@ import com.example.ghostnight.movietrailer.model.MovieVideoResponseModel;
 import com.example.ghostnight.movietrailer.model.MoviesPageResbonseModel;
 
 import io.reactivex.Single;
-import retrofit2.Call;
 
 public class NetworkService {
 
@@ -22,18 +21,18 @@ public class NetworkService {
         return INSTANCE;
     }
 
-    public void getMovies(int page, BaseResponseListener listener){
+    public Single<MoviesPageResbonseModel> getMovies(int page) {
         RestClient restClient = new RestClient();
         APIInterface apiInterface = restClient.createService();
-        Call<MoviesPageResbonseModel> call = apiInterface.getMovies(API_KEY, LANGUAGE, SORT, page);
-        call.enqueue(new BaseResponse<MoviesPageResbonseModel>(listener));
+        Single<MoviesPageResbonseModel> call = apiInterface.getMovies(API_KEY, LANGUAGE, SORT, page);
+        return call;
     }
 
-    public void getMovieVideo(int id, BaseResponseListener listener){
+    public Single<MovieVideoResponseModel> getMovieVideo(int id) {
         RestClient restClient = new RestClient();
         APIInterface apiInterface = restClient.createService();
-        Call<MovieVideoResponseModel> call = apiInterface.getMovieVideo(id, API_KEY, LANGUAGE);
-        call.enqueue(new BaseResponse<MovieVideoResponseModel>(listener));
+        Single<MovieVideoResponseModel> call = apiInterface.getMovieVideo(id, API_KEY, LANGUAGE);
+        return call;
     }
 
     public Single<MoviesPageResbonseModel> searchMovie(int page, String query) {
@@ -41,6 +40,5 @@ public class NetworkService {
         APIInterface apiInterface = restClient.createService();
         Single<MoviesPageResbonseModel> call = apiInterface.searchMovie(API_KEY, LANGUAGE, query, page);
         return call;
-//        call.enqueue(new BaseResponse<MoviesPageResbonseModel>(listener));
     }
 }

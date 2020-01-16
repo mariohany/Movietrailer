@@ -2,6 +2,8 @@ package com.example.ghostnight.movietrailer.ui.viewmodel;
 
 import android.app.Application;
 import android.content.Context;
+import android.util.Log;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.LiveData;
@@ -21,6 +23,7 @@ import io.reactivex.schedulers.Schedulers;
 
 public class SearchViewModel extends BaseViewModel {
 
+    private static final String TAG = SearchViewModel.class.getName();
     private Context context;
     private String lastQuery = "";
     private int pageNumber = 1;
@@ -51,7 +54,7 @@ public class SearchViewModel extends BaseViewModel {
                 .subscribe(new SingleObserver<MoviesPageResbonseModel>() {
                     @Override
                     public void onSubscribe(Disposable d) {
-
+                        Log.d(TAG, "onSubscribe: " + Thread.currentThread().getName());
                     }
 
                     @Override
@@ -70,7 +73,8 @@ public class SearchViewModel extends BaseViewModel {
 
                     @Override
                     public void onError(Throwable e) {
-
+                        Toast.makeText(context, e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
+                        showLoading.setValue(false);
                     }
                 });
     }
